@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:wakelock/wakelock.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:flutter_sudoku/utils/sudoku.dart';
@@ -87,14 +87,14 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       },
     );
 
-    Wakelock.enable();
+    WakelockPlus.enable();
   }
 
   @override
   void dispose() {
     timer.cancel();
     sudokuBox.clear();
-    Wakelock.disable();
+    WakelockPlus.disable();
     WidgetsBinding.instance.removeObserver(this);
     //
     super.dispose();
