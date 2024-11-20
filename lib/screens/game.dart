@@ -29,7 +29,7 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   //
-  String appLang = Hive.box('settings').get('language', defaultValue: 'TR');
+  String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
   //
   late Box sudokuBox;
   List<MapEntry<String, String>> history = [];
@@ -123,14 +123,15 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+
     return Scaffold(
+      backgroundColor: Colors.white, // or any color
       body: SafeArea(
         child: Column(
           children: [
-            //
-            const SizedBox(height: 10),
-            //
-            // APP BAR
+            // Upper Bar
+            const SizedBox(height: 2),
             UpperBar(
               name: widget.difficulty,
               moveBackButton: () {
@@ -140,48 +141,51 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 showPauseDialog(context, widget.difficulty);
               },
             ),
-            //
+            // Information Section
             const SizedBox(height: 20),
-            //
-            // INFORMATIONS
             InfoSection(
               gameTime: gameTime,
               difficulty: widget.difficulty,
             ),
-            //
             const SizedBox(height: 5),
-            //
-            // BOARD
-            GameBoard(
-              sudoku: sudoku,
-              history: history,
-              sudokuBox: sudokuBox,
-              remainingValues: remainingValues,
-              checkSudokuCompleted: checkSudokuCompleted,
+            // Board Section
+            Expanded(
+              flex: 6, // Adjust this value to allocate space proportionally
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: GameBoard(
+                  sudoku: sudoku,
+                  history: history,
+                  sudokuBox: sudokuBox,
+                  remainingValues: remainingValues,
+                  checkSudokuCompleted: checkSudokuCompleted,
+                ),
+              ),
             ),
-            //
-            Expanded(child: Container()),
-            //
-            // HELPER BUTTONS
-            FunctionalButtons(
-              sudoku: sudoku,
-              history: history,
-              remainingValues: remainingValues,
-              checkSudokuCompleted: checkSudokuCompleted,
+            // Helper Buttons Section
+            const SizedBox(height: 12),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: width / 30),
+              child: FunctionalButtons(
+                sudoku: sudoku,
+                history: history,
+                remainingValues: remainingValues,
+                checkSudokuCompleted: checkSudokuCompleted,
+              ),
             ),
-            //
-            SizedBox(height: width * 0.10),
-            //
-            // NUMERIC BUTTONS
-            numericSection(width),
-            //
-            SizedBox(height: width * 0.15),
-            //
+            const SizedBox(height: 16),
+            // Numeric Buttons Section
+            Expanded(
+              flex: 2, // Adjust this value as needed
+              child: numericSection(width),
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
     );
   }
+
 
   Widget numericSection(double width) {
     return ValueListenableBuilder(
@@ -216,7 +220,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                       penActivated: penActivated,
                       difficulty: widget.difficulty,
                       remainingValues: remainingValues,
-                      fastModeActivated: fastModeActivated,
+                      //fastModeActivated: fastModeActivated,
                       checkSudokuCompleted: checkSudokuCompleted,
                     )
                 ],

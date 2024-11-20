@@ -11,7 +11,7 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  String appLang = Hive.box('settings').get('language', defaultValue: 'TR');
+  String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
   //
   final ScrollController _scrollController = ScrollController();
 
@@ -166,7 +166,7 @@ class HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String appLang = Hive.box('settings').get('language', defaultValue: 'TR');
+    String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(

@@ -16,7 +16,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
-    String appLang = Hive.box('settings').get('language', defaultValue: 'TR');
+    String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
     return Scaffold(
       body: SafeArea(
           child: Padding(
@@ -60,7 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: GestureDetector(
                           onTap: () {
                             String appLang = Hive.box('settings')
-                                .get('language', defaultValue: 'TR');
+                                .get('language', defaultValue: 'EN');
 
                             if (appLang == 'EN') {
                               Hive.box('settings').put('language', 'TR');
@@ -170,7 +170,7 @@ class _SettingsCardState extends State<SettingsCard> {
   Widget build(BuildContext context) {
     bool value = Hive.box('settings')
         .get(widget.settName, defaultValue: widget.defaultValue);
-    String appLang = Hive.box('settings').get('language', defaultValue: 'TR');
+    String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6),
       child: Container(

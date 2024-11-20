@@ -16,7 +16,7 @@ class InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String appLang = Hive.box('settings').get('language', defaultValue: 'TR');
+    String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
     return ValueListenableBuilder(
       valueListenable:
           Hive.box('in_game_args').listenable(keys: ['time', 'mistakes']),
