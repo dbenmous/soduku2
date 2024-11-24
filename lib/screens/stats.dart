@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:iconsax/iconsax.dart';
 
 import 'package:flutter_sudoku/screens/settings.dart';
 import 'package:flutter_sudoku/shared/localization.dart';
