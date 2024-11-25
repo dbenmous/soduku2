@@ -143,17 +143,17 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
               },
             ),
             // Information Section
-            const SizedBox(height: 20),
+            const SizedBox(height: 0),
             InfoSection(
               gameTime: gameTime,
               difficulty: widget.difficulty,
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 2),
             // Board Section
             Expanded(
-              flex: 6, // Adjust this value to allocate space proportionally
+              flex: 7, // Adjust this value to allocate space proportionally
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 3.0),
                 child: GameBoard(
                   sudoku: sudoku,
                   history: history,
