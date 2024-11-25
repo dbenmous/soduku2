@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_sudoku/screens/home.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -53,7 +54,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       for (var item in line) {
         if (item.isCompleted) {
           remainingValues[item.actualValue] =
-              (remainingValues[item.actualValue]! - 1);
+          (remainingValues[item.actualValue]! - 1);
         }
       }
     }
@@ -70,7 +71,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     setInGameValues();
 
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) async {
+          (_) async {
         await showDialog<String>(
           context: context,
           barrierDismissible: false,
@@ -198,9 +199,9 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       ]),
       builder: (context, value, child) {
         bool penActivated =
-            Hive.box('in_game_args').get('penMode', defaultValue: false);
+        Hive.box('in_game_args').get('penMode', defaultValue: false);
         bool fastModeActivated =
-            Hive.box('in_game_args').get('fastMode', defaultValue: true);
+        Hive.box('in_game_args').get('fastMode', defaultValue: true);
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: width / 30),
           child: Column(
@@ -265,7 +266,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   void checkSudokuCompleted() {
     bool completed = sudoku.expand((e) => e).toList().every(
           (element) => element.isCompleted,
-        );
+    );
 
     if (completed) {
       stopTimer();
@@ -306,9 +307,9 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   }
 
   void showPauseDialog(
-    BuildContext context,
-    String difficulty,
-  ) {
+      BuildContext context,
+      String difficulty,
+      ) {
     //
     if (timer.isActive) stopTimer();
     //
@@ -630,41 +631,40 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              // mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                //
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.blue.shade900.withOpacity(.8),
-                    ),
-                    height: 40,
-                    child: Text(
-                      appText[appLang]!['home']!,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        letterSpacing: 2,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            child: GestureDetector(
+              onTap: () {
+                // Navigate to the home page and remove all previous pages from the stack
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const HomePage(),
                   ),
-                )
-              ],
+                      (route) => false,
+                );
+              },
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.blue.shade900.withOpacity(.8),
+                ),
+                height: 40,
+                child: Text(
+                  appText[appLang]!['home']!,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    letterSpacing: 2,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
           )
         ],
       ),
     );
 
-    // show the dialog
+    // Show the dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -673,6 +673,9 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       },
     );
   }
+
+
+
 
   //
   Widget landingScreen(BuildContext context, String title, String subtitle,

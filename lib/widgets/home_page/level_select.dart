@@ -56,7 +56,7 @@ class LevelSelectSheet extends StatelessWidget {
             appText[appLang]![levelName.toLowerCase()]!,
             style: const TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w400,
               color: Colors.blue, // Text color blue
             ),
           ),
