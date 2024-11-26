@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:flutter_sudoku/shared/localization.dart';
@@ -18,6 +17,12 @@ class InfoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
 
+    // Get best time for current difficulty
+    String bestTime = Hive.box('settings').get(
+        'best_time_${difficulty.toLowerCase()}',
+        defaultValue: '00:00'
+    );
+
     return ValueListenableBuilder(
       valueListenable:
       Hive.box('in_game_args').listenable(keys: ['time', 'mistakes']),
@@ -31,9 +36,6 @@ class InfoSection extends StatelessWidget {
         String min = time.split(':').first.padLeft(2, '0');
         String sec = time.split(':').last.padLeft(2, '0');
 
-        // Retrieve all-time best score
-        String allTimeBest = "00:45"; // Replace with actual logic to fetch best time
-
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           child: Row(
@@ -46,7 +48,7 @@ class InfoSection extends StatelessWidget {
                   Text(
                     "All Time",
                     style: TextStyle(
-                      color: Color(0xFF808080), // Grey color
+                      color: Color(0xFF808080),
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -57,13 +59,13 @@ class InfoSection extends StatelessWidget {
                       Icon(
                         Icons.emoji_events_outlined,
                         size: 20,
-                        color: Color(0xFF808080), // Grey color
+                        color: Color(0xFF808080),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        allTimeBest,
+                        bestTime,  // Using the best time from storage
                         style: TextStyle(
-                          color: Color(0xFF808080), // Grey color
+                          color: Color(0xFF808080),
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -80,7 +82,7 @@ class InfoSection extends StatelessWidget {
                   Text(
                     "Difficulty",
                     style: TextStyle(
-                      color: Color(0xFF808080), // Grey color
+                      color: Color(0xFF808080),
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -89,7 +91,7 @@ class InfoSection extends StatelessWidget {
                   Text(
                     appText[appLang]![difficulty.toLowerCase()]!,
                     style: TextStyle(
-                      color: Color(0xFF808080), // Grey color
+                      color: Color(0xFF808080),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -104,7 +106,7 @@ class InfoSection extends StatelessWidget {
                   Text(
                     "Mistakes",
                     style: TextStyle(
-                      color: Color(0xFF808080), // Grey color
+                      color: Color(0xFF808080),
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -119,7 +121,7 @@ class InfoSection extends StatelessWidget {
                       return Text(
                         "${limit ? "$mistakes / 3" : "$mistakes"}",
                         style: TextStyle(
-                          color: Color(0xFF808080), // Grey color
+                          color: Color(0xFF808080),
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -136,7 +138,7 @@ class InfoSection extends StatelessWidget {
                   Text(
                     "Time",
                     style: TextStyle(
-                      color: Color(0xFF808080), // Grey color
+                      color: Color(0xFF808080),
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -145,7 +147,7 @@ class InfoSection extends StatelessWidget {
                   Text(
                     "$min:$sec",
                     style: TextStyle(
-                      color: Color(0xFF808080), // Grey color
+                      color: Color(0xFF808080),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),

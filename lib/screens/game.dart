@@ -29,9 +29,7 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
-  //
   String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
-  //
   late Box sudokuBox;
   List<MapEntry<String, String>> history = [];
   Map<int, int> remainingValues = {};
@@ -60,10 +58,92 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     }
   }
 
+  void checkAndUpdateBestTime(String currentTime) {
+    var settingsBox = Hive.box('settings');
+    String bestTime = settingsBox.get(
+        'best_time_${widget.difficulty.toLowerCase()}',
+        defaultValue: '99:99'
+    );
+
+    int currentSeconds = _convertTimeToSeconds(currentTime);
+    int bestSeconds = _convertTimeToSeconds(bestTime);
+
+    if (currentSeconds < bestSeconds) {
+      settingsBox.put('best_time_${widget.difficulty.toLowerCase()}', currentTime);
+      showNewBestTimeDialog(context, currentTime);
+    }
+  }
+
+  int _convertTimeToSeconds(String time) {
+    List<String> parts = time.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
+
+  void showNewBestTimeDialog(BuildContext context, String newBestTime) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          child: AlertDialog(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(15.0)),
+            ),
+            title: Center(
+              child: Text(
+                appText[appLang]!['new_best_time'] ?? 'New Best Time!',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3,
+                  color: Colors.black87.withOpacity(.8),
+                ),
+              ),
+            ),
+            content: Text(
+              newBestTime,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade900,
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.blue.shade900.withOpacity(.7),
+                    ),
+                    height: 40,
+                    child: Text(
+                      appText[appLang]!['ok'] ?? 'OK',
+                      style: const TextStyle(
+                        fontFamily: 'f',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    //
+
     WidgetsBinding.instance.addObserver(this);
     sudokuBox = Hive.box('in_game_args');
     sudokuBox.clear();
@@ -97,16 +177,13 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     sudokuBox.clear();
     WakelockPlus.disable();
     WidgetsBinding.instance.removeObserver(this);
-    //
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // print("Status :" + state.toString());
 
-    // These are the callbacks
     switch (state) {
       case AppLifecycleState.resumed:
         break;
@@ -127,11 +204,10 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.white, // or any color
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // Upper Bar
             const SizedBox(height: 2),
             UpperBar(
               name: widget.difficulty,
@@ -142,18 +218,16 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 showPauseDialog(context, widget.difficulty);
               },
             ),
-            // Information Section
             const SizedBox(height: 0),
             InfoSection(
               gameTime: gameTime,
               difficulty: widget.difficulty,
             ),
             const SizedBox(height: 2),
-            // Board Section
             Expanded(
-              flex: 7, // Adjust this value to allocate space proportionally
+              flex: 5,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                padding: const EdgeInsets.symmetric(horizontal: 1.0),
                 child: GameBoard(
                   sudoku: sudoku,
                   history: history,
@@ -163,10 +237,9 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 ),
               ),
             ),
-            // Helper Buttons Section
-            const SizedBox(height: 12),
+            const SizedBox(height: 0), // Reduced space before buttons
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: width / 30),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0), // Match InfoSection padding
               child: FunctionalButtons(
                 sudoku: sudoku,
                 history: history,
@@ -174,19 +247,17 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 checkSudokuCompleted: checkSudokuCompleted,
               ),
             ),
-            const SizedBox(height: 16),
-            // Numeric Buttons Section
+            const SizedBox(height: 26), // Reduced space after buttons
             Expanded(
-              flex: 2, // Adjust this value as needed
+              flex: 2,
               child: numericSection(width),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 2),
           ],
         ),
       ),
     );
   }
-
 
   Widget numericSection(double width) {
     return ValueListenableBuilder(
@@ -199,14 +270,13 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       ]),
       builder: (context, value, child) {
         bool penActivated =
-        Hive.box('in_game_args').get('penMode', defaultValue: false);
+        sudokuBox.get('penMode', defaultValue: false);
         bool fastModeActivated =
-        Hive.box('in_game_args').get('fastMode', defaultValue: true);
+        sudokuBox.get('fastMode', defaultValue: true);
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: width / 30),
           child: Column(
             children: [
-              //
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -221,7 +291,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                       penActivated: penActivated,
                       difficulty: widget.difficulty,
                       remainingValues: remainingValues,
-                      //fastModeActivated: fastModeActivated,
                       checkSudokuCompleted: checkSudokuCompleted,
                     )
                 ],
@@ -233,14 +302,11 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     );
   }
 
-  //
   void startTimer({bool restrart = false}) {
     if (restrart) {
       sudokuBox.put('time', '0:0');
       resetTimer();
     }
-    // TODO: restart yok ise yarım kalan oyun devam ediyor demektir.
-    // sudokuBox.get('time', defaultValue: '0:0'); yap, parse et ve seconds yerine yaz.
     timer = Timer.periodic(const Duration(seconds: 1), (_) => addTime());
   }
 
@@ -261,8 +327,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     sudokuBox.put('time', '$min:$sec');
   }
 
-  //
-  //
   void checkSudokuCompleted() {
     bool completed = sudoku.expand((e) => e).toList().every(
           (element) => element.isCompleted,
@@ -270,11 +334,13 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
     if (completed) {
       stopTimer();
+      String currentTime = '${gameTime.inMinutes.toString().padLeft(2, '0')}:${gameTime.inSeconds.remainder(60).toString().padLeft(2, '0')}';
+      checkAndUpdateBestTime(currentTime);
       showSudokuCompletedDialog(context, widget.difficulty);
     }
 
     if (Hive.box('settings').get('mistakesLimit', defaultValue: true)) {
-      if (Hive.box('in_game_args').get('mistakes', defaultValue: 0) >= 3) {
+      if (sudokuBox.get('mistakes', defaultValue: 0) >= 3) {
         showSudokuFailedDialog(context);
       }
     }
@@ -302,24 +368,23 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     };
 
     prevSudokus.add(stats);
-    //
-    Navigator.of(context).pop();
+
+    // First navigate to home page and remove all previous routes
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const HomePage(),
+      ),
+          (route) => false,
+    );
   }
 
-  void showPauseDialog(
-      BuildContext context,
-      String difficulty,
-      ) {
-    //
+  void showPauseDialog(BuildContext context, String difficulty) {
     if (timer.isActive) stopTimer();
-    //
-    // time data example ->  01:25
-    String time = Hive.box('in_game_args').get('time', defaultValue: '0');
 
+    String time = sudokuBox.get('time', defaultValue: '0');
     String min = time.split(':').first.padLeft(2, '0');
     String sec = time.split(':').last.padLeft(2, '0');
 
-    // set up the buttons
     GestureDetector resumeButton = GestureDetector(
       onTap: () {
         if (!timer.isActive) {
@@ -374,108 +439,97 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       ),
     );
 
-    // set up the AlertDialog
     BackdropFilter dialog = BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-      child: AlertDialog(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: AlertDialog(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(15.0)),
+        borderRadius: BorderRadius.all(Radius.circular(15.0)),
+    ),
+    title: Center(
+    child: Text(
+    appText[appLang]!['paused']!,
+    style: TextStyle(
+    fontSize: 26,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 3,
+    color: Colors.black87.withOpacity(.8),
+    ),
+    ),
+    ),
+    content: SizedBox(
+    height: 90,
+    child: Padding(
+    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+    child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+    Column(
+    children: [
+    Text(appText[appLang]!['time']!,
+        style: const TextStyle(color: Colors.grey)),
+      const SizedBox(height: 10),
+      Text(
+        '$min:$sec',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w500,
+          color: Colors.black87.withOpacity(.8),
         ),
-        title: Center(
-          child: Text(
-            appText[appLang]!['paused']!,
+      ),
+      ],
+    ),
+      Expanded(child: Column()),
+      Column(
+        children: [
+          Text(appText[appLang]!['difficulty']!,
+              style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 10),
+          Text(
+            appText[appLang]![difficulty.toLowerCase()]!,
             style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 3,
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
               color: Colors.black87.withOpacity(.8),
             ),
           ),
-        ),
-        content: SizedBox(
-          height: 90,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    Text(appText[appLang]!['time']!,
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 10),
-                    Text(
-                      '$min:$sec',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87.withOpacity(.8),
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(child: Column()),
-                Column(
-                  children: [
-                    Text(
-                      appText[appLang]!['difficulty']!,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      appText[appLang]![difficulty.toLowerCase()]!,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87.withOpacity(.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              // mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                //
-                resumeButton,
-                //
-                const SizedBox(height: 10),
-                //
-                restartButton,
-              ],
-            ),
-          )
         ],
       ),
+      ],
+    ),
+    ),
+        ),
+      actions: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            children: [
+              resumeButton,
+              const SizedBox(height: 10),
+              restartButton,
+            ],
+          ),
+        )
+      ],
+    ),
     );
 
-    // show the dialog
     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return dialog;
-      },
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+    return dialog;
+    },
     );
   }
 
-  //
   void showSudokuCompletedDialog(BuildContext context, String difficulty) {
-    // local variables
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String min = twoDigits(gameTime.inMinutes);
     String sec = twoDigits(gameTime.inSeconds.remainder(60));
-    // set up the buttons
-    GestureDetector restartButton = GestureDetector(
+
+    GestureDetector homeButton = GestureDetector(
       onTap: () {
         endOfGame();
-        Navigator.of(context).pop();
       },
       child: Container(
         alignment: Alignment.center,
@@ -496,7 +550,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       ),
     );
 
-    // set up the AlertDialog
     BackdropFilter dialog = BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
       child: AlertDialog(
@@ -559,20 +612,12 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              // mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                //
-                restartButton,
-                //
-              ],
-            ),
-          )
+            child: homeButton,
+          ),
         ],
       ),
     );
 
-    // show the dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -582,7 +627,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     );
   }
 
-  //
   void showSudokuFailedDialog(BuildContext context) {
     BackdropFilter dialog = BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
@@ -633,7 +677,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: GestureDetector(
               onTap: () {
-                // Navigate to the home page and remove all previous pages from the stack
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                     builder: (context) => const HomePage(),
@@ -664,7 +707,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       ),
     );
 
-    // Show the dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -674,10 +716,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     );
   }
 
-
-
-
-  //
   Widget landingScreen(BuildContext context, String title, String subtitle,
       String strtGme, String diffText, String difficulty) {
     return BackdropFilter(
@@ -739,9 +777,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(
-              // mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                //
                 GestureDetector(
                   onTap: () {
                     if (widget.isPrevGame) {
