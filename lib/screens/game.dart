@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sudoku/screens/home.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:flutter_sudoku/utils/sudoku.dart';
 import 'package:flutter_sudoku/widgets/game/board.dart';
@@ -38,6 +39,73 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   late Timer timer;
   Duration gameTime = const Duration();
 
+  // Ad-related variables
+  InterstitialAd? _interstitialAd;
+  BannerAd? _bannerAd;
+  bool _isInterstitialAdReady = false;
+  bool _isBannerAdReady = false;
+
+  // Test ad unit IDs
+  final String _interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
+  final String _bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _isInterstitialAdReady = true;
+
+          // Set ad callbacks
+          _interstitialAd?.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              _isInterstitialAdReady = false;
+              ad.dispose();
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              print('Failed to show interstitial ad: $error');
+              _isInterstitialAdReady = false;
+              ad.dispose();
+            },
+          );
+
+          // Show ad when loaded
+          if (_isInterstitialAdReady) {
+            _interstitialAd?.show();
+          }
+        },
+        onAdFailedToLoad: (error) {
+          print('InterstitialAd failed to load: $error');
+          _isInterstitialAdReady = false;
+        },
+      ),
+    );
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          print('BannerAd failed to load: $error');
+          ad.dispose();
+          _isBannerAdReady = false;
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
   void setInGameValues() {
     sudokuBox.clear();
 
@@ -57,7 +125,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       }
     }
   }
-
   void checkAndUpdateBestTime(String currentTime) {
     var settingsBox = Hive.box('settings');
     String bestTime = settingsBox.get(
@@ -144,6 +211,10 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
 
+    // Initialize ads
+    _loadInterstitialAd();
+    _loadBannerAd();
+
     WidgetsBinding.instance.addObserver(this);
     sudokuBox = Hive.box('in_game_args');
     sudokuBox.clear();
@@ -173,6 +244,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _interstitialAd?.dispose();
+    _bannerAd?.dispose();
     timer.cancel();
     sudokuBox.clear();
     WakelockPlus.disable();
@@ -197,7 +270,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         break;
     }
   }
-
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -225,9 +297,9 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 2),
             Expanded(
-              flex: 5,
+              flex: 8,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1.0),
+                padding: const EdgeInsets.symmetric(horizontal: 2.0),
                 child: GameBoard(
                   sudoku: sudoku,
                   history: history,
@@ -237,9 +309,9 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 ),
               ),
             ),
-            const SizedBox(height: 0), // Reduced space before buttons
+            const SizedBox(height: 0),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0), // Match InfoSection padding
+              padding: const EdgeInsets.symmetric(horizontal: 6.0),
               child: FunctionalButtons(
                 sudoku: sudoku,
                 history: history,
@@ -247,18 +319,23 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 checkSudokuCompleted: checkSudokuCompleted,
               ),
             ),
-            const SizedBox(height: 26), // Reduced space after buttons
+            const SizedBox(height: 26),
             Expanded(
               flex: 2,
               child: numericSection(width),
             ),
+            if (_isBannerAdReady)
+              SizedBox(
+                height: _bannerAd!.size.height.toDouble(),
+                width: _bannerAd!.size.width.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
             const SizedBox(height: 2),
           ],
         ),
       ),
     );
   }
-
   Widget numericSection(double width) {
     return ValueListenableBuilder(
       valueListenable: sudokuBox.listenable(keys: [
@@ -369,7 +446,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
     prevSudokus.add(stats);
 
-    // First navigate to home page and remove all previous routes
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (context) => const HomePage(),
@@ -377,7 +453,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
           (route) => false,
     );
   }
-
   void showPauseDialog(BuildContext context, String difficulty) {
     if (timer.isActive) stopTimer();
 
@@ -800,7 +875,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                         fontSize: 18,
                         letterSpacing: 2,
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
