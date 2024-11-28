@@ -440,85 +440,85 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     );
 
     BackdropFilter dialog = BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: AlertDialog(
+      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+      child: AlertDialog(
         shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(15.0)),
-    ),
-    title: Center(
-    child: Text(
-    appText[appLang]!['paused']!,
-    style: TextStyle(
-    fontSize: 26,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 3,
-    color: Colors.black87.withOpacity(.8),
-    ),
-    ),
-    ),
-    content: SizedBox(
-    height: 90,
-    child: Padding(
-    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    Column(
-    children: [
-    Text(appText[appLang]!['time']!,
-        style: const TextStyle(color: Colors.grey)),
-      const SizedBox(height: 10),
-      Text(
-        '$min:$sec',
-        style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w500,
-          color: Colors.black87.withOpacity(.8),
+          borderRadius: BorderRadius.all(Radius.circular(15.0)),
         ),
-      ),
-      ],
-    ),
-      Expanded(child: Column()),
-      Column(
-        children: [
-          Text(appText[appLang]!['difficulty']!,
-              style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 10),
-          Text(
-            appText[appLang]![difficulty.toLowerCase()]!,
+        title: Center(
+          child: Text(
+            appText[appLang]!['paused']!,
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 3,
               color: Colors.black87.withOpacity(.8),
             ),
           ),
+        ),
+        content: SizedBox(
+          height: 90,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: [
+                    Text(appText[appLang]!['time']!,
+                        style: const TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 10),
+                    Text(
+                      '$min:$sec',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87.withOpacity(.8),
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(child: Column()),
+                Column(
+                  children: [
+                    Text(appText[appLang]!['difficulty']!,
+                        style: const TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 10),
+                    Text(
+                      appText[appLang]![difficulty.toLowerCase()]!,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87.withOpacity(.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              children: [
+                resumeButton,
+                const SizedBox(height: 10),
+                restartButton,
+              ],
+            ),
+          )
         ],
       ),
-      ],
-    ),
-    ),
-        ),
-      actions: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            children: [
-              resumeButton,
-              const SizedBox(height: 10),
-              restartButton,
-            ],
-          ),
-        )
-      ],
-    ),
     );
 
     showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-    return dialog;
-    },
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return dialog;
+      },
     );
   }
 
