@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_sudoku/widgets/game/upper_bar.dart';
 import 'package:flutter_sudoku/widgets/game/info_section.dart';
 import 'package:flutter_sudoku/widgets/game/numeric_button.dart';
 import 'package:flutter_sudoku/widgets/game/functional_buttons.dart';
+import 'package:confetti/confetti.dart';
 
 import 'package:flutter_sudoku/shared/localization.dart';
 
@@ -36,8 +38,12 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   Map<int, int> remainingValues = {};
   late List<List<SudokuCell>> sudoku;
 
+  late ConfettiController _confettiController;
+
+
   late Timer timer;
   Duration gameTime = const Duration();
+  bool _showCompletionOverlay = false;
 
   // Ad-related variables
   InterstitialAd? _interstitialAd;
@@ -48,7 +54,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   // Test ad unit IDs
   final String _interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   final String _bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-
   void _loadInterstitialAd() {
     InterstitialAd.load(
       adUnitId: _interstitialAdUnitId,
@@ -106,6 +111,161 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     _bannerAd?.load();
   }
 
+  Widget _buildCompletionOverlay() {
+    String currentTime = '${gameTime.inMinutes.toString().padLeft(2, '0')}:${gameTime.inSeconds.remainder(60).toString().padLeft(2, '0')}';
+    String bestTime = Hive.box('settings').get(
+        'best_time_${widget.difficulty.toLowerCase()}',
+        defaultValue: '--:--'
+    );
+
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                )
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  appText[appLang]!['completed']!,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  currentTime,
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  '🏆',
+                  style: TextStyle(fontSize: 64),
+                ),
+                const SizedBox(height: 30),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildStatRow('Today', currentTime),
+                      _buildDivider(),
+                      _buildStatRow('All Time', bestTime),
+                      _buildDivider(),
+                      _buildStatRow('Difficulty', widget.difficulty),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                _buildButton(
+                  'New Game',
+                      () {
+                    setState(() {
+                      _showCompletionOverlay = false;
+                      setInGameValues();
+                      resetTimer();
+                      startTimer();
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildButton(
+                  'Main',
+                      () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const HomePage(),
+                      ),
+                          (route) => false,
+                    );
+                  },
+                  isSecondary: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      color: Colors.grey.shade300,
+    );
+  }
+
+  Widget _buildButton(String text, VoidCallback onTap, {bool isSecondary = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          color: isSecondary ? Colors.grey.shade200 : Colors.blue.shade700,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: isSecondary ? Colors.black87 : Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
   void setInGameValues() {
     sudokuBox.clear();
 
@@ -125,6 +285,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       }
     }
   }
+
   void checkAndUpdateBestTime(String currentTime) {
     var settingsBox = Hive.box('settings');
     String bestTime = settingsBox.get(
@@ -206,10 +367,12 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       },
     );
   }
-
   @override
   void initState() {
     super.initState();
+
+    _confettiController = ConfettiController(duration: const Duration(seconds: 10));
+
 
     // Initialize ads
     _loadInterstitialAd();
@@ -250,6 +413,10 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     sudokuBox.clear();
     WakelockPlus.disable();
     WidgetsBinding.instance.removeObserver(this);
+
+    _confettiController.dispose();
+
+
     super.dispose();
   }
 
@@ -270,6 +437,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         break;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -277,65 +445,112 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 2),
-            UpperBar(
-              name: widget.difficulty,
-              moveBackButton: () {
-                stopTimer();
-              },
-              pauseDialog: () {
-                showPauseDialog(context, widget.difficulty);
-              },
-            ),
-            const SizedBox(height: 0),
-            InfoSection(
-              gameTime: gameTime,
-              difficulty: widget.difficulty,
-            ),
-            const SizedBox(height: 2),
-            Expanded(
-              flex: 8,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                child: GameBoard(
-                  sudoku: sudoku,
-                  history: history,
-                  sudokuBox: sudokuBox,
-                  remainingValues: remainingValues,
-                  checkSudokuCompleted: checkSudokuCompleted,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 2),
+                UpperBar(
+                  name: widget.difficulty,
+                  moveBackButton: () {
+                    stopTimer();
+                  },
+                  pauseDialog: () {
+                    showPauseDialog(context, widget.difficulty);
+                  },
                 ),
-              ),
+                const SizedBox(height: 0),
+                InfoSection(
+                  gameTime: gameTime,
+                  difficulty: widget.difficulty,
+                ),
+                const SizedBox(height: 2),
+                Expanded(
+                  flex: 8,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                    child: GameBoard(
+                      sudoku: sudoku,
+                      history: history,
+                      sudokuBox: sudokuBox,
+                      remainingValues: remainingValues,
+                      checkSudokuCompleted: checkSudokuCompleted,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: FunctionalButtons(
+                    sudoku: sudoku,
+                    history: history,
+                    remainingValues: remainingValues,
+                    checkSudokuCompleted: checkSudokuCompleted,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Expanded(
+                  flex: 2,
+                  child: numericSection(width),
+                ),
+                if (_isBannerAdReady)
+                  SizedBox(
+                    height: _bannerAd!.size.height.toDouble(),
+                    width: _bannerAd!.size.width.toDouble(),
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
+                const SizedBox(height: 2),
+              ],
             ),
-            const SizedBox(height: 0),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0),
-              child: FunctionalButtons(
-                sudoku: sudoku,
-                history: history,
-                remainingValues: remainingValues,
-                checkSudokuCompleted: checkSudokuCompleted,
-              ),
+          ),
+          if (_showCompletionOverlay)
+            _buildCompletionOverlay(),
+          Align(
+            alignment: Alignment.center,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              particleDrag: 0.05,
+              emissionFrequency: 0.05,
+              numberOfParticles: 50,
+              gravity: 0.05,
+              shouldLoop: false,
+              colors: const [
+                Colors.green,
+                Colors.yellow,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple
+              ],
+              createParticlePath: drawStarPath,
             ),
-            const SizedBox(height: 26),
-            Expanded(
-              flex: 2,
-              child: numericSection(width),
-            ),
-            if (_isBannerAdReady)
-              SizedBox(
-                height: _bannerAd!.size.height.toDouble(),
-                width: _bannerAd!.size.width.toDouble(),
-                child: AdWidget(ad: _bannerAd!),
-              ),
-            const SizedBox(height: 2),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
+  Path drawStarPath(Size size) {
+    double degToRad(double deg) => deg * (pi / 180.0);
+    const numberOfPoints = 5;
+    final halfWidth = size.width / 2;
+    final externalRadius = halfWidth;
+    final internalRadius = halfWidth / 2.5;
+    final degreesPerStep = degToRad(360 / numberOfPoints);
+    final halfDegreesPerStep = degreesPerStep / 2;
+    final path = Path();
+    final fullAngle = degToRad(360);
+    path.moveTo(size.width, halfWidth);
+
+    for (double step = 0; step < fullAngle; step += degreesPerStep) {
+      path.lineTo(halfWidth + externalRadius * cos(step), halfWidth + externalRadius * sin(step));
+      path.lineTo(halfWidth + internalRadius * cos(step + halfDegreesPerStep), halfWidth + internalRadius * sin(step + halfDegreesPerStep));
+    }
+    path.close();
+    return path;
+  }
+
   Widget numericSection(double width) {
     return ValueListenableBuilder(
       valueListenable: sudokuBox.listenable(keys: [
@@ -413,7 +628,11 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       stopTimer();
       String currentTime = '${gameTime.inMinutes.toString().padLeft(2, '0')}:${gameTime.inSeconds.remainder(60).toString().padLeft(2, '0')}';
       checkAndUpdateBestTime(currentTime);
-      showSudokuCompletedDialog(context, widget.difficulty);
+      setState(() {
+        _showCompletionOverlay = true;
+        _confettiController.play();
+
+      });
     }
 
     if (Hive.box('settings').get('mistakesLimit', defaultValue: true)) {
@@ -421,37 +640,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         showSudokuFailedDialog(context);
       }
     }
-  }
-
-  void endOfGame() {
-    Box prevSudokus = Hive.box('prev_sudokus');
-
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String min = twoDigits(gameTime.inMinutes);
-    String sec = twoDigits(gameTime.inSeconds.remainder(60));
-    DateTime date = DateTime.now();
-
-    int totMistakes = sudokuBox.get('mistakes', defaultValue: 0);
-    int totHint = sudokuBox.get('hintCount', defaultValue: 0);
-
-    bool perfectGame = totMistakes == 0 && totHint == 0;
-
-    Map<String, String> stats = {
-      'difficulty': widget.difficulty,
-      'perfectGame': perfectGame.toString(),
-      'date': '${date.day}/${date.month}/${date.year}',
-      'time': '${twoDigits(date.hour)}:${twoDigits(date.minute)}',
-      'duration': '$min:$sec',
-    };
-
-    prevSudokus.add(stats);
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => const HomePage(),
-      ),
-          (route) => false,
-    );
   }
   void showPauseDialog(BuildContext context, String difficulty) {
     if (timer.isActive) stopTimer();
@@ -584,111 +772,6 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
               ],
             ),
           )
-        ],
-      ),
-    );
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return dialog;
-      },
-    );
-  }
-
-  void showSudokuCompletedDialog(BuildContext context, String difficulty) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String min = twoDigits(gameTime.inMinutes);
-    String sec = twoDigits(gameTime.inSeconds.remainder(60));
-
-    GestureDetector homeButton = GestureDetector(
-      onTap: () {
-        endOfGame();
-      },
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: Colors.blue.shade900.withOpacity(.7),
-        ),
-        height: 40,
-        child: Text(
-          appText[appLang]!['home']!,
-          style: const TextStyle(
-            fontFamily: 'f',
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            fontSize: 15,
-          ),
-        ),
-      ),
-    );
-
-    BackdropFilter dialog = BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-      child: AlertDialog(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(15.0)),
-        ),
-        title: Center(
-          child: Text(
-            appText[appLang]!['completed']!,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 3,
-              color: Colors.black87.withOpacity(.8),
-            ),
-          ),
-        ),
-        content: SizedBox(
-          height: 90,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    Text(appText[appLang]!['time']!,
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 10),
-                    Text(
-                      '$min:$sec',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87.withOpacity(.8),
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(child: Column()),
-                Column(
-                  children: [
-                    Text(appText[appLang]!['difficulty']!,
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 10),
-                    Text(
-                      appText[appLang]![difficulty.toLowerCase()]!,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87.withOpacity(.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: homeButton,
-          ),
         ],
       ),
     );
