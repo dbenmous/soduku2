@@ -30,12 +30,14 @@ await VibrationManager.initialize();
 Widget build(BuildContext context) {
 String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
 return Scaffold(
+backgroundColor: Colors.grey[50],
 body: SafeArea(
-child: Padding(
-padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
 child: Column(
 children: [
-Row(
+// Header
+Padding(
+padding: const EdgeInsets.all(16.0),
+child: Row(
 children: [
 GestureDetector(
 onTap: () async {
@@ -43,22 +45,22 @@ await SoundManager.playSound(SoundType.click);
 await VibrationManager.vibrate();
 Navigator.of(context).pop();
 },
-child: Padding(
-padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+child: Container(
+padding: const EdgeInsets.all(8),
 child: Icon(
-size: 26,
 Icons.arrow_back_ios_new_rounded,
-color: Colors.black87.withOpacity(.75),
+color: Colors.blue.shade900,
+size: 24,
 ),
 ),
 ),
-const SizedBox(width: 20),
+const SizedBox(width: 16),
 Text(
 appText[appLang]!['settings']!,
-style: TextStyle(
+style: const TextStyle(
 fontSize: 24,
 fontWeight: FontWeight.w600,
-color: Colors.black87.withOpacity(.8),
+color: Colors.black87,
 ),
 ),
 Expanded(child: Container()),
@@ -85,13 +87,29 @@ child: Image.asset('assets/language_$appLang.png'),
 ),
 ],
 ),
-const SizedBox(height: 30),
+),
+const SizedBox(height: 8),
+
+// Settings List
 Expanded(
 child: ValueListenableBuilder(
 valueListenable: Hive.box('settings').listenable(),
 builder: (context, value, child) {
 return SingleChildScrollView(
 physics: const AlwaysScrollableScrollPhysics(),
+child: Container(
+margin: const EdgeInsets.symmetric(horizontal: 16),
+decoration: BoxDecoration(
+color: Colors.white,
+borderRadius: BorderRadius.circular(12),
+boxShadow: [
+BoxShadow(
+color: Colors.black.withOpacity(0.05),
+blurRadius: 10,
+offset: const Offset(0, 2),
+),
+],
+),
 child: Column(
 children: [
 SettingsCard(
@@ -100,6 +118,7 @@ text: appText[appLang]!['audio']!,
 settName: 'audio',
 defaultValue: false,
 hasSlider: true,
+showTopDivider: false,
 ),
 SettingsCard(
 text: appText[appLang]!['vibration']!,
@@ -138,12 +157,12 @@ hasSlider: false,
 ),
 ],
 ),
+),
 );
 },
 ),
 ),
 ],
-),
 ),
 ),
 );
@@ -158,6 +177,7 @@ required this.icon,
 required this.settName,
 required this.defaultValue,
 required this.hasSlider,
+this.showTopDivider = true,
 });
 
 final String text;
@@ -165,6 +185,7 @@ final IconData icon;
 final String settName;
 final bool defaultValue;
 final bool hasSlider;
+final bool showTopDivider;
 
 @override
 State<SettingsCard> createState() => _SettingsCardState();
@@ -192,15 +213,17 @@ bool value = Hive.box('settings').get(widget.settName, defaultValue: widget.defa
 double volume = Hive.box('settings').get('volume', defaultValue: 0.5);
 String appLang = Hive.box('settings').get('language', defaultValue: 'EN');
 
-return Padding(
-padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6),
-child: Container(
-padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-decoration: BoxDecoration(
-color: Colors.white,
-borderRadius: BorderRadius.circular(8),
-border: Border.all(color: Colors.grey.shade400, width: 1),
+return Column(
+children: [
+if (widget.showTopDivider)
+Divider(
+height: 1,
+color: Colors.grey[200],
+indent: 16,
+endIndent: 16,
 ),
+Padding(
+padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
 child: Column(
 crossAxisAlignment: CrossAxisAlignment.start,
 children: [
@@ -208,19 +231,20 @@ Row(
 children: [
 Icon(
 widget.icon,
-color: Colors.black87.withOpacity(.8),
-size: 32,
+size: 24,
+color: Colors.blue.shade900,
 ),
-const SizedBox(width: 15),
-Text(
+const SizedBox(width: 16),
+Expanded(
+child: Text(
 widget.text,
-style: TextStyle(
-fontSize: 20,
+style: const TextStyle(
+fontSize: 16,
 fontWeight: FontWeight.w500,
-color: Colors.black54.withOpacity(.8),
+color: Colors.black87,
 ),
 ),
-Expanded(child: Container()),
+),
 Switch(
 value: value,
 onChanged: (newValue) async {
@@ -246,7 +270,7 @@ await SoundManager.testSound();
 ),
 if (widget.hasSlider && value)
 Padding(
-padding: const EdgeInsets.only(top: 8.0),
+padding: const EdgeInsets.only(top: 16, left: 40),
 child: Row(
 children: [
 Icon(
@@ -255,16 +279,21 @@ size: 20,
 color: Colors.grey.shade600,
 ),
 Expanded(
+child: SliderTheme(
+data: SliderThemeData(
+activeTrackColor: Colors.blue.shade900,
+thumbColor: Colors.blue.shade900,
+overlayColor: Colors.blue.shade900.withOpacity(0.1),
+),
 child: Slider(
 value: volume,
 onChanged: (newValue) async {
 setState(() {
 Hive.box('settings').put('volume', newValue);
 });
-// Play test sound when adjusting volume
 await SoundManager.testSound();
 },
-activeColor: Colors.blue.shade900,
+),
 ),
 ),
 Icon(
@@ -276,28 +305,23 @@ color: Colors.grey.shade600,
 ),
 ),
 Padding(
-padding: const EdgeInsets.only(
-left: 16,
-right: 16,
-top: 10,
-bottom: 6,
-),
+padding: const EdgeInsets.only(top: 8, left: 40),
 child: Text(
 widget.settName == 'audio'
 ? appText[appLang]!['audio_descr'] ?? 'Enable sound effects and adjust volume'
     : widget.settName == 'vibration'
 ? appText[appLang]!['vibration_descr'] ?? 'Enable haptic feedback'
     : appText[appLang]!['${widget.settName}_descr']!,
-maxLines: 5,
 style: TextStyle(
 fontSize: 12,
-color: Colors.grey.shade700,
+color: Colors.grey.shade600,
 ),
 ),
 ),
 ],
 ),
 ),
+],
 );
 }
 }
