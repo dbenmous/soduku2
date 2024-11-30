@@ -51,6 +51,13 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   bool _isInterstitialAdReady = false;
   bool _isBannerAdReady = false;
 
+
+  // Add with other ad variables
+  RewardedAd? _rewardedAd;
+  bool _isRewardedAdReady = false;
+  final String _rewardedAdUnitId = 'ca-app-pub-3940256099942544/5224354917'; // Test ID
+
+
   // Test ad unit IDs
   final String _interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   final String _bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
@@ -110,6 +117,62 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
     _bannerAd?.load();
   }
+
+  void _loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: _rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _isRewardedAdReady = true;
+
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              _isRewardedAdReady = false;
+              ad.dispose();
+              _loadRewardedAd(); // Load next ad
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              _isRewardedAdReady = false;
+              ad.dispose();
+              _loadRewardedAd();
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          print('Failed to load rewarded ad: $error');
+          _isRewardedAdReady = false;
+        },
+      ),
+    );
+  }
+
+  Future<bool> _showRewardedAd() async {
+    if (!_isRewardedAdReady) {
+      // Load a new ad if not ready
+      _loadRewardedAd();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Loading ad, please try again in a moment'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return false;
+    }
+
+    final completer = Completer<bool>();
+
+    _rewardedAd?.show(
+      onUserEarnedReward: (_, reward) {
+        completer.complete(true);
+      },
+    );
+
+    return completer.future;
+  }
+
+
 
   Widget _buildCompletionOverlay() {
     String currentTime = '${gameTime.inMinutes.toString().padLeft(2, '0')}:${gameTime.inSeconds.remainder(60).toString().padLeft(2, '0')}';
@@ -375,6 +438,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
 
     // Initialize ads
+    _loadRewardedAd();
     _loadInterstitialAd();
     _loadBannerAd();
 
@@ -407,6 +471,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _rewardedAd?.dispose();
     _interstitialAd?.dispose();
     _bannerAd?.dispose();
     timer.cancel();
@@ -487,6 +552,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                     history: history,
                     remainingValues: remainingValues,
                     checkSudokuCompleted: checkSudokuCompleted,
+                    onHintWithAd: _showRewardedAd,  // rewarded
+
                   ),
                 ),
                 const SizedBox(height: 26),
@@ -633,6 +700,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         _confettiController.play();
 
       });
+      // Reset ad state for next game
+      _loadRewardedAd();
     }
 
     if (Hive.box('settings').get('mistakesLimit', defaultValue: true)) {
