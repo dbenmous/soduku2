@@ -59,7 +59,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
 
   // Test ad unit IDs
-  final String _interstitialAdUnitId = 'ca-app-pub-7913343498256191/4008347639';
+  final String _interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   final String _bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
   void _loadInterstitialAd() {
     InterstitialAd.load(
