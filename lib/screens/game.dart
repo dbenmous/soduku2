@@ -59,7 +59,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
 
 
   // Test ad unit IDs
-  final String _interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
+  final String _interstitialAdUnitId = 'ca-app-pub-7913343498256191/4008347639';
   final String _bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
   void _loadInterstitialAd() {
     InterstitialAd.load(
@@ -206,7 +206,13 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       // Check if we've completed 3 numbers and not currently showing an ad
       if (completedNumbers.length % 3 == 0 && !_showingCompletionAd) {
         _showingCompletionAd = true;
-        print('Triggering interstitial ad for completed numbers: $completedNumbers'); // Debugging
+
+        // Update the request configuration with the test device ID
+        MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(
+            testDeviceIds: ['CE5C0981BF6BF201E62DCCCFA87937B3'], // Replace with your test device ID
+          ),
+        );
 
         // Load and show a new interstitial ad
         InterstitialAd.load(
@@ -222,14 +228,18 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                 onAdFailedToShowFullScreenContent: (ad, error) {
                   _showingCompletionAd = false;
                   ad.dispose();
+                  print('InterstitialAd failed to show: $error');
+                  // Optionally, try loading and showing the ad again
+                  // loadAndShowInterstitialAd();
                 },
               );
               ad.show();
-              print('Interstitial ad shown successfully after completing ${completedNumbers.length} numbers'); // New Debugging
             },
             onAdFailedToLoad: (error) {
-              print('InterstitialAd failed to load: $error');
               _showingCompletionAd = false;
+              print('InterstitialAd failed to load: $error');
+              // Optionally, try loading and showing the ad again
+              // loadAndShowInterstitialAd();
             },
           ),
         );
