@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 import 'package:flutter_sudoku/utils/sudoku.dart';
 import 'package:flutter_sudoku/widgets/game/grid_cell.dart';
 
@@ -13,14 +12,15 @@ class GameBoard extends StatelessWidget {
     required this.history,
     required this.checkSudokuCompleted,
     required this.remainingValues,
+    required this.onNumberCompleted, // Add this
   });
 
   final Box sudokuBox;
   final List<MapEntry<String, String>> history;
-
   final Map<int, int> remainingValues;
   final List<List<SudokuCell>> sudoku;
   final VoidCallback checkSudokuCompleted;
+  final Function(int) onNumberCompleted; // Add this
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,6 @@ class GameBoard extends StatelessWidget {
         'highlightValue',
       ]),
       builder: (context, value, child) {
-        // print("REFRESH");
         return AspectRatio(
           aspectRatio: 1,
           child: Padding(
@@ -54,6 +53,7 @@ class GameBoard extends StatelessWidget {
                   cell: sudoku[row][col],
                   remainingValues: remainingValues,
                   checkSudokuCompleted: checkSudokuCompleted,
+                  onNumberCompleted: onNumberCompleted, // Pass the callback
                 );
               }),
             ),

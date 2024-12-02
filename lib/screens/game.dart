@@ -69,12 +69,16 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         onAdLoaded: (ad) {
           _interstitialAd = ad;
           _isInterstitialAdReady = true;
+          print('Interstitial ad successfully loaded');
+
 
           // Set ad callbacks
           _interstitialAd?.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               _isInterstitialAdReady = false;
               ad.dispose();
+              print('Interstitial ad dismissed');
+
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               print('Failed to show interstitial ad: $error');
@@ -94,7 +98,10 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         },
       ),
     );
+    print('Loading interstitial ad...');
+
   }
+
 
   void _loadBannerAd() {
     _bannerAd = BannerAd(
@@ -105,6 +112,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         onAdLoaded: (_) {
           setState(() {
             _isBannerAdReady = true;
+            print('Banner ad loaded successfully');
+
           });
         },
         onAdFailedToLoad: (ad, error) {
@@ -113,7 +122,10 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
           _isBannerAdReady = false;
         },
       ),
+
     );
+    print('Loading banner ad...');
+
 
     _bannerAd?.load();
   }
@@ -126,17 +138,23 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           _isRewardedAdReady = true;
+          print('Rewarded ad successfully loaded');
+
 
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               _isRewardedAdReady = false;
               ad.dispose();
               _loadRewardedAd(); // Load next ad
+              print('Rewarded ad dismissed');
+
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               _isRewardedAdReady = false;
               ad.dispose();
               _loadRewardedAd();
+              print('Failed to show rewarded ad: $error');
+
             },
           );
         },
@@ -145,7 +163,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
           _isRewardedAdReady = false;
         },
       ),
-    );
+    );print('Loading rewarded ad...');
+
   }
 
   Future<bool> _showRewardedAd() async {
@@ -172,6 +191,61 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
     return completer.future;
   }
 
+  // completion tracking and interstitial ad trigger
+  Set<int> completedNumbers = {};
+  bool _showingCompletionAd = false;
+
+  void checkNumberCompletion(int number) {
+    print('Checking completion for number: $number');
+
+    if (!completedNumbers.contains(number) && remainingValues[number] == 0) {
+      // Number has been fully used
+      completedNumbers.add(number);
+      print('Completed numbers: $completedNumbers'); // Debugging
+
+      // Check if we've completed 3 numbers and not currently showing an ad
+      if (completedNumbers.length % 3 == 0 && !_showingCompletionAd) {
+        _showingCompletionAd = true;
+
+        // Update the request configuration with the test device ID
+        MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(
+            testDeviceIds: ['CE5C0981BF6BF201E62DCCCFA87937B3'], // Replace with your test device ID
+          ),
+        );
+
+        // Load and show a new interstitial ad
+        InterstitialAd.load(
+          adUnitId: _interstitialAdUnitId,
+          request: const AdRequest(),
+          adLoadCallback: InterstitialAdLoadCallback(
+            onAdLoaded: (ad) {
+              ad.fullScreenContentCallback = FullScreenContentCallback(
+                onAdDismissedFullScreenContent: (ad) {
+                  _showingCompletionAd = false;
+                  ad.dispose();
+                },
+                onAdFailedToShowFullScreenContent: (ad, error) {
+                  _showingCompletionAd = false;
+                  ad.dispose();
+                  print('InterstitialAd failed to show: $error');
+                  // Optionally, try loading and showing the ad again
+                  // loadAndShowInterstitialAd();
+                },
+              );
+              ad.show();
+            },
+            onAdFailedToLoad: (error) {
+              _showingCompletionAd = false;
+              print('InterstitialAd failed to load: $error');
+              // Optionally, try loading and showing the ad again
+              // loadAndShowInterstitialAd();
+            },
+          ),
+        );
+      }
+    }
+  }
 
 
   Widget _buildCompletionOverlay() {
@@ -329,6 +403,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       ),
     );
   }
+
   void setInGameValues() {
     sudokuBox.clear();
 
@@ -430,6 +505,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       },
     );
   }
+
   @override
   void initState() {
     super.initState();
@@ -541,6 +617,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                       sudokuBox: sudokuBox,
                       remainingValues: remainingValues,
                       checkSudokuCompleted: checkSudokuCompleted,
+                      onNumberCompleted: checkNumberCompletion,  // Add this line
                     ),
                   ),
                 ),
@@ -702,6 +779,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       });
       // Reset ad state for next game
       _loadRewardedAd();
+      completedNumbers.clear();
+      _showingCompletionAd = false;
     }
 
     if (Hive.box('settings').get('mistakesLimit', defaultValue: true)) {

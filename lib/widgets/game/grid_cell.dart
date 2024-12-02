@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 import 'package:flutter_sudoku/utils/sudoku.dart';
 
 class GridCell extends StatelessWidget {
@@ -14,6 +13,7 @@ class GridCell extends StatelessWidget {
     required this.history,
     required this.remainingValues,
     required this.checkSudokuCompleted,
+    required this.onNumberCompleted, // Add this
   });
 
   final int row;
@@ -23,6 +23,7 @@ class GridCell extends StatelessWidget {
   final Map<int, int> remainingValues;
   final List<List<SudokuCell>> sudoku;
   final VoidCallback checkSudokuCompleted;
+  final Function(int) onNumberCompleted; // Add this
 
   final Box sudokuBox = Hive.box('in_game_args');
 
@@ -92,6 +93,12 @@ class GridCell extends StatelessWidget {
               // Select the cell by storing its coordinates
               sudokuBox.put('xy', '$row$col');
               sudokuBox.put('highlightValue', cell.currentValue);
+
+              // Check if the number was placed correctly
+              if (cell.isCompleted) {
+                // Call the onNumberCompleted callback
+                onNumberCompleted(cell.currentValue);
+              }
             },
             child: cell.useAsNote
                 ? NoteSection(
