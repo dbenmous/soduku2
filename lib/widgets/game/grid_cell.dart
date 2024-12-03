@@ -32,8 +32,8 @@ class GridCell extends StatelessWidget {
     BorderSide thickBorder = const BorderSide(width: 2, color: Colors.black);
     BorderSide thinBorder = const BorderSide(width: 1, color: Colors.grey);
 
-    FontWeight prefilledWeight = FontWeight.w500;
-    FontWeight latefilledWeight = FontWeight.w500;
+    FontWeight prefilledWeight = FontWeight.w400;
+    FontWeight latefilledWeight = FontWeight.w400;
 
     Color prefilledColor = Colors.black87.withOpacity(.8);
     Color incorrectColor = Colors.red.shade400;
@@ -93,12 +93,6 @@ class GridCell extends StatelessWidget {
               // Select the cell by storing its coordinates
               sudokuBox.put('xy', '$row$col');
               sudokuBox.put('highlightValue', cell.currentValue);
-
-              // Check if the number was placed correctly
-              if (cell.isCompleted) {
-                // Call the onNumberCompleted callback
-                onNumberCompleted(cell.currentValue);
-              }
             },
             child: cell.useAsNote
                 ? NoteSection(

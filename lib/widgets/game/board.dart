@@ -12,7 +12,7 @@ class GameBoard extends StatelessWidget {
     required this.history,
     required this.checkSudokuCompleted,
     required this.remainingValues,
-    required this.onNumberCompleted, // Add this
+    required this.onNumberCompleted,
   });
 
   final Box sudokuBox;
@@ -20,7 +20,7 @@ class GameBoard extends StatelessWidget {
   final Map<int, int> remainingValues;
   final List<List<SudokuCell>> sudoku;
   final VoidCallback checkSudokuCompleted;
-  final Function(int) onNumberCompleted; // Add this
+  final Function(int) onNumberCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +35,17 @@ class GameBoard extends StatelessWidget {
         'highlightValue',
       ]),
       builder: (context, value, child) {
+        // Check for fill events only if it's a number (not coordinates)
+        var fillValue = sudokuBox.get('fill');
+        if (fillValue != null && fillValue is int) {
+          print('Fill event detected for number: $fillValue');
+          // Use post frame callback to avoid setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onNumberCompleted(fillValue);
+          });
+          sudokuBox.delete('fill');
+        }
+
         return AspectRatio(
           aspectRatio: 1,
           child: Padding(
@@ -53,7 +64,7 @@ class GameBoard extends StatelessWidget {
                   cell: sudoku[row][col],
                   remainingValues: remainingValues,
                   checkSudokuCompleted: checkSudokuCompleted,
-                  onNumberCompleted: onNumberCompleted, // Pass the callback
+                  onNumberCompleted: onNumberCompleted,
                 );
               }),
             ),

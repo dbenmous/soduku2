@@ -14,6 +14,7 @@ import 'package:flutter_sudoku/widgets/game/info_section.dart';
 import 'package:flutter_sudoku/widgets/game/numeric_button.dart';
 import 'package:flutter_sudoku/widgets/game/functional_buttons.dart';
 import 'package:confetti/confetti.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:flutter_sudoku/shared/localization.dart';
 
@@ -195,57 +196,94 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   Set<int> completedNumbers = {};
   bool _showingCompletionAd = false;
 
+  void handleNumberCompletion(int number) {
+    print('Number completion callback triggered for: $number');
+
+    if (!completedNumbers.contains(number)) {
+      // Use post frame callback to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          completedNumbers.add(number);
+          print('Added number $number to completed numbers. Total: ${completedNumbers.length}');
+
+          if (completedNumbers.length % 3 == 0) {
+            print('Three numbers completed, showing ad');
+            Fluttertoast.showToast(
+              msg: "Completed 2 numbers!",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+            );
+            _loadInterstitialAd();
+          }
+        });
+      });
+    }
+  }
+
   void checkNumberCompletion(int number) {
     print('Checking completion for number: $number');
 
-    if (!completedNumbers.contains(number) && remainingValues[number] == 0) {
-      // Number has been fully used
-      completedNumbers.add(number);
-      print('Completed numbers: $completedNumbers'); // Debugging
+    if (!completedNumbers.contains(number)) {
+      print('Number $number not yet in completedNumbers.');
+      if (remainingValues[number] == 0) {
+        // Number has been fully used
+        completedNumbers.add(number);
+        print('Number $number added to completedNumbers. Completed numbers: $completedNumbers');
 
-      // Check if we've completed 3 numbers and not currently showing an ad
-      if (completedNumbers.length % 3 == 0 && !_showingCompletionAd) {
-        _showingCompletionAd = true;
+        // Show a toast when 2 numbers are completed
+        if (completedNumbers.length % 3 == 0) {
+          print('Completed 3 numbers!');
 
-        // Update the request configuration with the test device ID
-        MobileAds.instance.updateRequestConfiguration(
-          RequestConfiguration(
-            testDeviceIds: ['CE5C0981BF6BF201E62DCCCFA87937B3'], // Replace with your test device ID
-          ),
-        );
+          Fluttertoast.showToast(
+            msg: "Completed 2 numbers!",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.black,
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
 
-        // Load and show a new interstitial ad
-        InterstitialAd.load(
-          adUnitId: _interstitialAdUnitId,
-          request: const AdRequest(),
-          adLoadCallback: InterstitialAdLoadCallback(
-            onAdLoaded: (ad) {
-              ad.fullScreenContentCallback = FullScreenContentCallback(
-                onAdDismissedFullScreenContent: (ad) {
-                  _showingCompletionAd = false;
-                  ad.dispose();
+          // Check if we've completed 2 numbers and not currently showing an ad
+          if (!_showingCompletionAd) {
+            _showingCompletionAd = true;
+
+            // Load and show a new interstitial ad
+            InterstitialAd.load(
+              adUnitId: _interstitialAdUnitId,
+              request: const AdRequest(),
+              adLoadCallback: InterstitialAdLoadCallback(
+                onAdLoaded: (ad) {
+                  ad.fullScreenContentCallback = FullScreenContentCallback(
+                    onAdDismissedFullScreenContent: (ad) {
+                      _showingCompletionAd = false;
+                      ad.dispose();
+                    },
+                    onAdFailedToShowFullScreenContent: (ad, error) {
+                      _showingCompletionAd = false;
+                      ad.dispose();
+                      print('InterstitialAd failed to show: $error');
+                    },
+                  );
+                  ad.show();
                 },
-                onAdFailedToShowFullScreenContent: (ad, error) {
+                onAdFailedToLoad: (error) {
                   _showingCompletionAd = false;
-                  ad.dispose();
-                  print('InterstitialAd failed to show: $error');
-                  // Optionally, try loading and showing the ad again
-                  // loadAndShowInterstitialAd();
+                  print('InterstitialAd failed to load: $error');
                 },
-              );
-              ad.show();
-            },
-            onAdFailedToLoad: (error) {
-              _showingCompletionAd = false;
-              print('InterstitialAd failed to load: $error');
-              // Optionally, try loading and showing the ad again
-              // loadAndShowInterstitialAd();
-            },
-          ),
-        );
+              ),
+            );
+          }
+        }
+      } else {
+        print('Number $number still has remaining values: ${remainingValues[number]}');
       }
+    } else {
+      print('Number $number is already in completedNumbers.');
     }
   }
+
+
 
 
   Widget _buildCompletionOverlay() {
@@ -617,7 +655,8 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
                       sudokuBox: sudokuBox,
                       remainingValues: remainingValues,
                       checkSudokuCompleted: checkSudokuCompleted,
-                      onNumberCompleted: checkNumberCompletion,  // Add this line
+                      onNumberCompleted: handleNumberCompletion,
+
                     ),
                   ),
                 ),

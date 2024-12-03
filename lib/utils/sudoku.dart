@@ -100,7 +100,7 @@ class SudokuCell {
       useAsNote = false;
       notes.clear();
       isCompleted = actualValue == currentValue;
-      return true;
+      return isCompleted; // Return true if the number was placed correctly
     }
     return false;
   }

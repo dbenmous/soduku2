@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -57,36 +56,36 @@ class NumericButton extends StatelessWidget {
           // Normal fill mode
           if (!penActivated) {
             sudokuBox.put('highlightValue', num);
+            print('Attempting to place number $num at position ($row, $col)');
 
             // Attempt to fill the selected cell with the chosen number
             if (sudoku[row][col].toggleValue(num)) {
-              sudokuBox.put('fill', '$row$col');
-
               // Value is incorrect
               if (!sudoku[row][col].isCompleted) {
+                print('Number $num is incorrect at position ($row, $col)');
                 sudokuBox.put(
                   'mistakes',
                   sudokuBox.get('mistakes', defaultValue: 0) + 1,
                 );
                 history.add(MapEntry('wrong', '$row$col'));
 
-                // Check for mistake limit
-                if (Hive.box('settings')
-                    .get('mistakesLimit', defaultValue: true) &&
+                if (Hive.box('settings').get('mistakesLimit', defaultValue: true) &&
                     sudokuBox.get('mistakes', defaultValue: 0) >= 3) {
-                  // Trigger game over
                   checkSudokuCompleted();
                 }
               }
               // Value is correct
               else {
+                print('Number $num is correct at position ($row, $col)');
                 remainingValues[num] = (remainingValues[num]! - 1);
                 history.add(MapEntry('correct', '$row$col'));
-                sudokuBox.put('remainingVals', 0);
 
-                // If the number is used up, deselect the cell
+                // Check if number is completed (all positions filled)
                 if (remainingValues[num] == 0) {
-                  sudokuBox.put('xy', '99');
+                  print('Number $num has been completed! Triggering completion event');
+                  sudokuBox.put('xy', '99');  // Deselect current cell
+                  // Trigger fill event with the completed number
+                  sudokuBox.put('fill', num);
                 }
               }
 
@@ -96,6 +95,7 @@ class NumericButton extends StatelessWidget {
           // Pencil mode (adding notes)
           else {
             if (sudoku[row][col].toggleNote(num)) {
+              // For pencil mode, we store coordinates since it's not a completion event
               sudokuBox.put('fill', '$row$col');
             }
           }
@@ -133,5 +133,4 @@ class NumericButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
+  }}
