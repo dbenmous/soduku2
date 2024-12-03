@@ -43,7 +43,7 @@ class GridCell extends StatelessWidget {
     Color rowColHighBG = Colors.blue.shade50;
     Color defaultBG = Colors.white;
 
-    const double fontSize = 28;
+    const double fontSize = 27;
 
     //
     String data = sudokuBox.get('xy', defaultValue: '99');

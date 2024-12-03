@@ -620,7 +620,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    //double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -746,7 +746,7 @@ class _GamePageState extends State<GamePage> with WidgetsBindingObserver {
       builder: (context, value, child) {
         bool penActivated =
         sudokuBox.get('penMode', defaultValue: false);
-        bool fastModeActivated =
+        //bool fastModeActivated =
         sudokuBox.get('fastMode', defaultValue: true);
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: width / 30),
